@@ -1,14 +1,14 @@
-import type { Endpoint } from "payload/config";
-import type { ApiProvider } from "../../providers";
-import type { RouteOptions } from "../../types";
-import handler from "./handler";
+import { Endpoint } from 'payload'
+import { ApiProvider } from '../../providers/index.js'
+import { RouteOptions } from '../../types/index.js'
+import handler from './handler.js'
 
 const getLive = (provider: ApiProvider, options: RouteOptions): Endpoint => {
   return {
-    path: "/analytics/live",
-    method: "post",
+    path: '/analytics/live',
+    method: 'post',
     handler: handler(provider, options),
-  };
-};
+  }
+}
 
-export default getLive;
+export default getLive

@@ -1,48 +1,64 @@
-import type { Endpoint } from "payload/config";
-import type { ApiProvider } from "../../providers";
-import type { RouteOptions } from "../../types";
-import type { Payload } from "payload";
-import { dayInMinutes } from "../../utilities/timings";
-import { differenceInMinutes } from "date-fns";
+import { Endpoint } from 'payload'
+import { ApiProvider } from '../../providers/index.js'
+import { RouteOptions } from '../../types/index.js'
+import { Payload } from 'payload'
+import { dayInMinutes } from '../../utilities/timings.js'
+import { differenceInMinutes } from 'date-fns'
 
 const handler = (provider: ApiProvider, options: RouteOptions) => {
-  const handler: Endpoint["handler"] = async (req, res, next) => {
-    const { user } = req;
-    const payload: Payload = req.payload;
-    const { property, metrics, timeframe } = req.body;
-    const { access, cache } = options;
+  const handler: Endpoint['handler'] = async (req) => {
+    const { user } = req
+    const payload: Payload = req.payload
+    const { property, metrics, timeframe } = req.json ? await req.json() : {}
+    const { access, cache } = options
 
     if (access) {
-      const accessControl = access(user);
+      const accessControl = access(user)
 
+      payload.logger.error('📊 Analytics API: Request fails access control.')
       if (!accessControl) {
-        payload.logger.error("📊 Analytics API: Request fails access control.");
-        res
-          .status(500)
-          .send("Request fails access control. Are you authenticated?");
-        return next();
+        return Response.json(
+          {
+            message: '📊 Analytics API: Request fails access control.',
+          },
+          {
+            status: 500,
+          },
+        )
       }
     }
 
     if (!metrics) {
-      payload.logger.error("📊 Analytics API: Missing metrics argument.");
-      res.status(500).send("Missing metrics argument.");
-      return next();
+      payload.logger.error('📊 Analytics API: Missing metrics argument.')
+      return Response.json(
+        {
+          error: true,
+          message: 'Missing metrics argument.',
+        },
+        {
+          status: 500,
+        },
+      )
     }
 
     if (!property) {
-      payload.logger.error("📊 Analytics API: Missing property argument.");
-      res.status(500).send("Missing property argument.");
-      return next();
+      payload.logger.error('📊 Analytics API: Missing property argument.')
+      return Response.json(
+        {
+          error: true,
+          message: 'Missing property argument.',
+        },
+        {
+          status: 500,
+        },
+      )
     }
 
     try {
       if (cache) {
-        const timeNow = new Date();
-        const cacheKey = `report|${metrics.join("-")}|${
-          timeframe ?? "30d"
-        }|${property}`;
-        const cacheLifetime = options.cache?.routes?.report ?? dayInMinutes;
+        const timeNow = new Date()
+        const cacheKey = `report|${metrics.join('-')}|${timeframe ?? '30d'}|${property}`
+        const cacheLifetime = options.cache?.routes?.report ?? dayInMinutes
 
         const {
           docs: [cachedData],
@@ -57,7 +73,7 @@ const handler = (provider: ApiProvider, options: RouteOptions) => {
               },
             ],
           },
-        });
+        })
 
         if (!cachedData) {
           const data = await provider
@@ -66,7 +82,7 @@ const handler = (provider: ApiProvider, options: RouteOptions) => {
               metrics,
               timeframe,
             })
-            .catch((error) => payload.logger.error(error));
+            .catch((error) => payload.logger.error(error))
 
           await payload.create({
             collection: cache.slug,
@@ -75,26 +91,20 @@ const handler = (provider: ApiProvider, options: RouteOptions) => {
               cacheTimestamp: timeNow.toISOString(),
               data: data,
             },
-          });
+          })
 
-          res.status(200).send(data);
-          return next();
+          return Response.json(data)
         }
 
         if (cachedData) {
-          if (
-            differenceInMinutes(
-              timeNow,
-              Date.parse(cachedData.cacheTimestamp)
-            ) > cacheLifetime
-          ) {
+          if (differenceInMinutes(timeNow, Date.parse(cachedData.cacheTimestamp)) > cacheLifetime) {
             const data = await provider
               .getReportData({
                 property,
                 metrics,
                 timeframe,
               })
-              .catch((error) => payload.logger.error(error));
+              .catch((error) => payload.logger.error(error))
 
             await payload.update({
               id: cachedData.id,
@@ -104,13 +114,11 @@ const handler = (provider: ApiProvider, options: RouteOptions) => {
                 cacheTimestamp: timeNow.toISOString(),
                 data: data,
               },
-            });
+            })
 
-            res.status(200).send(data);
-            return next();
+            return Response.json(data)
           } else {
-            res.status(200).send(cachedData.data);
-            return next();
+            return Response.json(cachedData.data)
           }
         }
       }
@@ -121,17 +129,24 @@ const handler = (provider: ApiProvider, options: RouteOptions) => {
           metrics,
           timeframe,
         })
-        .catch((error) => payload.logger.error(error));
+        .catch((error) => payload.logger.error(error))
 
-      res.status(200).send(data);
+      return Response.json(data)
     } catch (error) {
-      payload.logger.error(error);
-      res.status(500).send(`📊 Analytics API: ${error}`);
-      return next();
+      payload.logger.error(error)
+      return Response.json(
+        {
+          error: true,
+          message: `📊 Analytics API: ${error}`,
+        },
+        {
+          status: 500,
+        },
+      )
     }
-  };
+  }
 
-  return handler;
-};
+  return handler
+}
 
-export default handler;
+export default handler

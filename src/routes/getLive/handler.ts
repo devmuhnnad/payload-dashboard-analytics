@@ -1,32 +1,36 @@
-import type { Endpoint } from "payload/config";
-import type { ApiProvider } from "../../providers";
-import type { RouteOptions } from "../../types";
-import type { Payload } from "payload";
-import { differenceInMinutes } from "date-fns";
+import { Endpoint } from 'payload'
+import { ApiProvider } from '../../providers/index.js'
+import { RouteOptions } from '../../types/index.js'
+import { Payload } from 'payload'
+import { differenceInMinutes } from 'date-fns'
 
 const handler = (provider: ApiProvider, options: RouteOptions) => {
-  const handler: Endpoint["handler"] = async (req, res, next) => {
-    const { user } = req;
-    const payload: Payload = req.payload;
-    const { access, cache } = options;
+  const handler: Endpoint['handler'] = async (req) => {
+    const { user } = req
+    const payload: Payload = req.payload
+    const { access, cache } = options
 
     if (access) {
-      const accessControl = access(user);
+      const accessControl = access(user)
 
       if (!accessControl) {
-        payload.logger.error("📊 Analytics API: Request fails access control.");
-        res
-          .status(500)
-          .send("Request fails access control. Are you authenticated?");
-        return next();
+        payload.logger.error('📊 Analytics API: Request fails access control.')
+        return Response.json(
+          {
+            message: 'Request fails access control. Are you authenticated?',
+          },
+          {
+            status: 500,
+          },
+        )
       }
     }
 
     try {
       if (cache) {
-        const timeNow = new Date();
-        const cacheKey = "liveData";
-        const cacheLifetime = options.cache?.routes?.live ?? 5;
+        const timeNow = new Date()
+        const cacheKey = 'liveData'
+        const cacheLifetime = options.cache?.routes?.live ?? 5
 
         const {
           docs: [cachedData],
@@ -41,10 +45,10 @@ const handler = (provider: ApiProvider, options: RouteOptions) => {
               },
             ],
           },
-        });
+        })
 
         if (!cachedData) {
-          const data = await provider.getLiveData({});
+          const data = await provider.getLiveData({})
 
           await payload.create({
             collection: cache.slug,
@@ -53,20 +57,14 @@ const handler = (provider: ApiProvider, options: RouteOptions) => {
               cacheTimestamp: timeNow.toISOString(),
               data: data,
             },
-          });
+          })
 
-          res.status(200).send(data);
-          return next();
+          return Response.json(data)
         }
 
         if (cachedData) {
-          if (
-            differenceInMinutes(
-              timeNow,
-              Date.parse(cachedData.cacheTimestamp)
-            ) > cacheLifetime
-          ) {
-            const data = await provider.getLiveData({});
+          if (differenceInMinutes(timeNow, Date.parse(cachedData.cacheTimestamp)) > cacheLifetime) {
+            const data = await provider.getLiveData({})
 
             await payload.update({
               id: cachedData.id,
@@ -76,27 +74,32 @@ const handler = (provider: ApiProvider, options: RouteOptions) => {
                 cacheTimestamp: timeNow.toISOString(),
                 data: data,
               },
-            });
+            })
 
-            res.status(200).send(data);
-            return next();
+            return Response.json(data)
           } else {
-            res.status(200).send(cachedData.data);
-            return next();
+            return Response.json(cachedData.data)
           }
         }
       }
-      const data = await provider.getLiveData({});
+      const data = await provider.getLiveData({})
 
-      res.status(200).send(data);
+      return Response.json(data)
     } catch (error) {
-      payload.logger.error(error);
-      res.status(500).send(`📊 Analytics API: ${error}`);
-      return next();
+      payload.logger.error(error)
+      return Response.json(
+        {
+          error: true,
+          message: `📊 Analytics API: ${error}`,
+        },
+        {
+          status: 500,
+        },
+      )
     }
-  };
+  }
 
-  return handler;
-};
+  return handler
+}
 
-export default handler;
+export default handler

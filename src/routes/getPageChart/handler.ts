@@ -1,50 +1,63 @@
-import type { Endpoint } from "payload/config";
-import type { ApiProvider } from "../../providers";
-import type { RouteOptions } from "../../types";
-import type { ChartData } from "../../types/data";
-import type { Payload } from "payload";
-import { dayInMinutes } from "../../utilities/timings";
-import { differenceInMinutes } from "date-fns";
+import { Endpoint } from 'payload'
+import { ApiProvider } from '../../providers/index.js'
+import { RouteOptions } from '../../types/index.js'
+import { ChartData } from '../../types/data.js'
+import { Payload } from 'payload'
+import { dayInMinutes } from '../../utilities/timings.js'
+import { differenceInMinutes } from 'date-fns'
 
 const handler = (provider: ApiProvider, options: RouteOptions) => {
-  const handler: Endpoint["handler"] = async (req, res, next) => {
-    const { user } = req;
-    const payload: Payload = req.payload;
-    const { timeframe, metrics, pageId } = req.body;
-    const { access, cache } = options;
+  const handler: Endpoint['handler'] = async (req) => {
+    const { user } = req
+    const payload: Payload = req.payload
+    const { timeframe, metrics, pageId } = req.json ? await req.json() : {}
+    const { access, cache } = options
 
     if (access) {
-      const accessControl = access(user);
+      const accessControl = access(user)
 
       if (!accessControl) {
-        payload.logger.error("📊 Analytics API: Request fails access control.");
-        res
-          .status(500)
-          .send("Request fails access control. Are you authenticated?");
-        return next();
+        payload.logger.error('📊 Analytics API: Request fails access control.')
+        return Response.json(
+          {
+            message: 'Request fails access control. Are you authenticated?',
+          },
+          {
+            status: 500,
+          },
+        )
       }
     }
 
     if (!metrics) {
-      payload.logger.error("📊 Analytics API: Missing metrics argument.");
-      res.status(500).send("Missing metrics argument.");
-      return next();
+      payload.logger.error('📊 Analytics API: Missing metrics argument.')
+      return Response.json(
+        {
+          message: 'Missing metrics argument.',
+        },
+        {
+          status: 500,
+        },
+      )
     }
 
     if (!pageId) {
-      payload.logger.error("📊 Analytics API: Missing pageId argument.");
-      res.status(500).send("Missing pageId argument.");
-      return next();
+      payload.logger.error('📊 Analytics API: Missing pageId argument.')
+      return Response.json(
+        {
+          message: 'Missing pageId argument.',
+        },
+        {
+          status: 500,
+        },
+      )
     }
 
     try {
       if (cache) {
-        const timeNow = new Date();
-        const cacheKey = `pageChart|${metrics.join("-")}|${
-          timeframe ?? "30d"
-        }|${pageId}`;
-        const cacheLifetime =
-          options.cache?.routes?.pageAggregate ?? dayInMinutes;
+        const timeNow = new Date()
+        const cacheKey = `pageChart|${metrics.join('-')}|${timeframe ?? '30d'}|${pageId}`
+        const cacheLifetime = options.cache?.routes?.pageAggregate ?? dayInMinutes
 
         const {
           docs: [cachedData],
@@ -59,16 +72,16 @@ const handler = (provider: ApiProvider, options: RouteOptions) => {
               },
             ],
           },
-        });
+        })
 
         if (!cachedData) {
-          const data: ChartData = await provider
+          const data: ChartData = (await provider
             .getPageChartData({
               timeframe: timeframe,
               metrics: metrics,
               pageId,
             })
-            .catch((error) => payload.logger.error(error));
+            .catch((error) => payload.logger.error(error))) as ChartData
 
           await payload.create({
             collection: cache.slug,
@@ -77,26 +90,20 @@ const handler = (provider: ApiProvider, options: RouteOptions) => {
               cacheTimestamp: timeNow.toISOString(),
               data: data,
             },
-          });
+          })
 
-          res.status(200).send(data);
-          return next();
+          return Response.json(data)
         }
 
         if (cachedData) {
-          if (
-            differenceInMinutes(
-              timeNow,
-              Date.parse(cachedData.cacheTimestamp)
-            ) > cacheLifetime
-          ) {
-            const data: ChartData = await provider
+          if (differenceInMinutes(timeNow, Date.parse(cachedData.cacheTimestamp)) > cacheLifetime) {
+            const data: ChartData = (await provider
               .getPageChartData({
                 timeframe: timeframe,
                 metrics: metrics,
                 pageId,
               })
-              .catch((error) => payload.logger.error(error));
+              .catch((error) => payload.logger.error(error))) as ChartData
 
             await payload.update({
               id: cachedData.id,
@@ -106,34 +113,39 @@ const handler = (provider: ApiProvider, options: RouteOptions) => {
                 cacheTimestamp: timeNow.toISOString(),
                 data: data,
               },
-            });
+            })
 
-            res.status(200).send(data);
-            return next();
+            return Response.json(data)
           } else {
-            res.status(200).send(cachedData.data);
-            return next();
+            return Response.json(cachedData.data)
           }
         }
       }
 
-      const data: ChartData = await provider
+      const data: ChartData = (await provider
         .getPageChartData({
           timeframe: timeframe,
           metrics: metrics,
           pageId,
         })
-        .catch((error) => payload.logger.error(error));
+        .catch((error) => payload.logger.error(error))) as ChartData
 
-      res.status(200).send(data);
+      return Response.json(data)
     } catch (error) {
-      payload.logger.error(error);
-      res.status(500).send(`📊 Analytics API: ${error}`);
-      return next();
+      payload.logger.error(error)
+      return Response.json(
+        {
+          error: true,
+          message: `📊 Analytics API: ${error}`,
+        },
+        {
+          status: 500,
+        },
+      )
     }
-  };
+  }
 
-  return handler;
-};
+  return handler
+}
 
-export default handler;
+export default handler

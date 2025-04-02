@@ -1,13 +1,13 @@
-import type { GoogleProvider } from "../../types/providers";
+import { GoogleProvider } from '../../types/providers.js'
 
-import getGlobalAggregateData from "./getGlobalAggregateData";
-import getGlobalChartData from "./getGlobalChartData";
-import getPageChartData from "./getPageChartData";
-import getPageAggregateData from "./getPageAggregateData";
-import getLiveData from "./getLiveData";
-import getReportData from "./getReportData";
+import getGlobalAggregateData from './getGlobalAggregateData.js'
+import getGlobalChartData from './getGlobalChartData.js'
+import getPageChartData from './getPageChartData.js'
+import getPageAggregateData from './getPageAggregateData.js'
+import getLiveData from './getLiveData.js'
+import getReportData from './getReportData.js'
 
-import type {
+import {
   ApiProvider,
   GlobalAggregateOptions,
   GlobalChartOptions,
@@ -15,11 +15,18 @@ import type {
   PageAggregateOptions,
   LiveDataOptions,
   ReportDataOptions,
-} from "..";
+} from '../index.js'
 
-import { MetricMap } from "./utilities";
+import { MetricMap } from './utilities.js'
 
 const google = (provider: GoogleProvider): ApiProvider => {
+  Object.keys(MetricMap).forEach((key) => {
+    if (provider.labels && provider.labels[key as keyof typeof MetricMap]) {
+      MetricMap[key as keyof typeof MetricMap].label =
+        provider.labels[key as keyof typeof MetricMap] || ''
+    }
+  })
+
   return {
     getGlobalAggregateData: async (options: GlobalAggregateOptions) =>
       await getGlobalAggregateData(provider, options),
@@ -29,12 +36,10 @@ const google = (provider: GoogleProvider): ApiProvider => {
       await getPageChartData(provider, options),
     getPageAggregateData: async (options: PageAggregateOptions) =>
       await getPageAggregateData(provider, options),
-    getLiveData: async (options: LiveDataOptions) =>
-      await getLiveData(provider, options),
-    getReportData: async (options: ReportDataOptions) =>
-      await getReportData(provider, options),
+    getLiveData: async (options: LiveDataOptions) => await getLiveData(provider, options),
+    getReportData: async (options: ReportDataOptions) => await getReportData(provider, options),
     metricsMap: MetricMap,
-  };
-};
+  }
+}
 
-export default google;
+export default google

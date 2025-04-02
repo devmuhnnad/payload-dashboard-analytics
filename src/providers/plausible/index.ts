@@ -1,11 +1,11 @@
-import type { PlausibleProvider } from "../../types/providers";
-import getGlobalAggregateData from "./getGlobalAggregateData";
-import getGlobalChartData from "./getGlobalChartData";
-import getPageAggregateData from "./getPageAggregateData";
-import getPageChartData from "./getPageChartData";
-import getLiveData from "./getLiveData";
-import getReportData from "./getReportData";
-import type {
+import { PlausibleProvider } from '../../types/providers.js'
+import getGlobalAggregateData from './getGlobalAggregateData.js'
+import getGlobalChartData from './getGlobalChartData.js'
+import getPageAggregateData from './getPageAggregateData.js'
+import getPageChartData from './getPageChartData.js'
+import getLiveData from './getLiveData.js'
+import getReportData from './getReportData.js'
+import {
   ApiProvider,
   GlobalAggregateOptions,
   GlobalChartOptions,
@@ -13,11 +13,17 @@ import type {
   PageAggregateOptions,
   LiveDataOptions,
   ReportDataOptions,
-} from "..";
+} from '../index.js'
 
-import { MetricMap } from "./utilities";
+import { MetricMap } from './utilities.js'
 
 const plausible = (provider: PlausibleProvider): ApiProvider => {
+  Object.keys(MetricMap).forEach((key) => {
+    if (provider.labels && provider.labels[key as keyof typeof MetricMap]) {
+      MetricMap[key as keyof typeof MetricMap].label =
+        provider.labels[key as keyof typeof MetricMap] || ''
+    }
+  })
   return {
     getGlobalAggregateData: async (options: GlobalAggregateOptions) =>
       await getGlobalAggregateData(provider, options),
@@ -27,12 +33,10 @@ const plausible = (provider: PlausibleProvider): ApiProvider => {
       await getPageChartData(provider, options),
     getPageAggregateData: async (options: PageAggregateOptions) =>
       await getPageAggregateData(provider, options),
-    getLiveData: async (options: LiveDataOptions) =>
-      await getLiveData(provider, options),
-    getReportData: async (options: ReportDataOptions) =>
-      await getReportData(provider, options),
+    getLiveData: async (options: LiveDataOptions) => await getLiveData(provider, options),
+    getReportData: async (options: ReportDataOptions) => await getReportData(provider, options),
     metricsMap: MetricMap,
-  };
-};
+  }
+}
 
-export default plausible;
+export default plausible

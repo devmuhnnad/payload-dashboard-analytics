@@ -1,0 +1,26 @@
+{
+  "extends": "../tsconfig.json",
+  "exclude": [],
+  "include": [
+    "**/*.js",
+    "**/*.jsx",
+    "**/*.mjs",
+    "**/*.cjs",
+    "**/*.ts",
+    "**/*.tsx",
+    "../src/**/*.ts",
+    "../src/**/*.tsx",
+    "next.config.mjs",
+    ".next/types/**/*.ts"
+  ],
+  "compilerOptions": {
+    "baseUrl": "./",
+    "paths": {
+      "@payload-config": ["./payload.config.ts"],
+      "payload-dashboard-analytics": ["../src/index.ts"],
+      "payload-dashboard-analytics/ui": ["../src/exports/ui.ts"]
+    },
+    "noEmit": true,
+    "emitDeclarationOnly": false
+  }
+}

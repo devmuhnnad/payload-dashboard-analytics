@@ -1,87 +1,88 @@
-import React, { useEffect, useState, lazy, useMemo } from "react";
-import type { ChartDataPoint, ChartData } from "../../types/data";
-import type { AxisOptions } from "react-charts";
-import { useTheme } from "payload/dist/admin/components/utilities/Theme";
+'use client'
+import React, { useEffect, useState, lazy, useMemo } from 'react'
+import { ChartDataPoint, ChartData } from '../../types/data.js'
+import { AxisOptions } from 'react-charts'
+import { useTheme } from '@payloadcms/ui'
 
-type Props = {};
+type Props = {}
 
 const ChartComponent = lazy(() =>
-  import("react-charts").then((module) => {
-    return { default: module.Chart };
-  })
-);
+  import('react-charts').then((module) => {
+    return { default: module.Chart }
+  }),
+)
 
-const GlobalViewsChart: React.FC<Props> = ({}) => {
-  const [chartData, setChartData] = useState<ChartData>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const theme = useTheme();
+export const GlobalViewsChart: React.FC<Props> = ({}) => {
+  const [chartData, setChartData] = useState<ChartData>([])
+  const [isLoading, setIsLoading] = useState<boolean>(true)
+  const theme = useTheme()
 
   useEffect(() => {
     const getChartData = fetch(`/api/analytics/globalChart`, {
-      method: "post",
-      credentials: "include",
+      method: 'post',
+      credentials: 'include',
       headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        timeframe: "currentMonth",
-        metrics: ["views"],
+        timeframe: 'currentMonth',
+        metrics: ['views'],
       }),
-    }).then((response) => response.json());
+    }).then((response) => response.json())
 
     getChartData.then((data: ChartData) => {
-      setChartData(data);
-      setIsLoading(false);
-    });
-  }, []);
+      setChartData(data)
+      setIsLoading(false)
+    })
+  }, [])
 
   const timeframeIndicator = useMemo(() => {
-    return new Date().toLocaleString("default", { month: "long" });
-  }, []);
+    return new Date().toLocaleString('default', { month: 'long' })
+  }, [])
 
   const chartLabel = useMemo(() => {
-    return "Views";
-  }, []);
+    return 'Views'
+  }, [])
 
   const primaryAxis = React.useMemo<AxisOptions<ChartDataPoint>>(() => {
     return {
       getValue: (datum) => datum.timestamp,
       show: false,
-      elementType: "line",
+      elementType: 'line',
       showDatumElements: false,
-    };
-  }, []);
+    }
+  }, [])
 
   const secondaryAxes = React.useMemo<AxisOptions<ChartDataPoint>[]>(
     () => [
       {
         getValue: (datum) => {
-          return datum.value;
+          return datum.value
         },
-        elementType: "line",
+        elementType: 'line',
       },
     ],
-    []
-  );
+    [],
+  )
 
   return (
     <section
       style={{
-        marginBottom: "1.5rem",
-        maxWidth: "70rem",
+        marginBottom: '1.5rem',
+        maxWidth: '70rem',
       }}
     >
       {chartData?.length && chartData.length > 0 ? (
         <>
-          <h1 style={{ fontSize: "1.25rem", marginBottom: "0.5rem" }}>
+          <h1 style={{ fontSize: '1.25rem', marginBottom: '0.5rem' }}>
             {chartLabel} ({timeframeIndicator})
           </h1>
-          <div style={{ minHeight: "200px", position: "relative" }}>
+          <div style={{ minHeight: '200px', position: 'relative' }}>
             <ChartComponent
               options={{
                 data: chartData,
-                dark: theme.theme === "dark",
+                dark: theme.theme === 'dark',
                 initialHeight: 220,
                 tooltip: false,
                 /* @ts-ignore */
@@ -98,7 +99,5 @@ const GlobalViewsChart: React.FC<Props> = ({}) => {
         <div>No data found for {chartLabel}.</div>
       )}
     </section>
-  );
-};
-
-export default GlobalViewsChart;
+  )
+}

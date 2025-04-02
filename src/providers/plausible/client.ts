@@ -1,64 +1,64 @@
-import type { PlausibleProvider } from "../../types/providers";
-import type { Metrics, Properties } from "../../types/widgets";
-import { MetricMap, PropertyMap } from "./utilities";
+import { PlausibleProvider } from '../../types/providers.js'
+import { Metrics, Properties } from '../../types/widgets.js'
+import { MetricMap, PropertyMap } from './utilities.js'
 
 type ClientOptions = {
-  endpoint: string;
-  timeframe?: string;
-  metrics?: Metrics[];
-  property?: Properties;
-};
+  endpoint: string
+  timeframe?: string
+  metrics?: Metrics[]
+  property?: Properties
+}
 
 function client(provider: PlausibleProvider, options: ClientOptions) {
-  const { endpoint, timeframe, metrics, property } = options;
-  const host = provider.host ?? `https://plausible.io`;
-  const apiVersion = `v1`; // for future use
+  const { endpoint, timeframe, metrics, property } = options
+  const host = provider.host ?? `https://plausible.io`
+  const apiVersion = `v1` // for future use
 
   const period = () => {
     switch (timeframe) {
-      case "currentMonth":
-        return "month";
+      case 'currentMonth':
+        return 'month'
       case null:
       case undefined:
-        return "30d";
+        return '30d'
       default:
-        return timeframe;
+        return timeframe
     }
-  };
+  }
 
-  const url = new URL(`${host}/api/${apiVersion}${endpoint}`);
-  url.searchParams.append("site_id", provider.siteId);
+  const url = new URL(`${host}/api/${apiVersion}${endpoint}`)
+  url.searchParams.append('site_id', provider.siteId)
 
   const getMetrics = () => {
-    const myMetrics: string[] = [];
-    const availableMetrics = Object.entries(MetricMap);
+    const myMetrics: string[] = []
+    const availableMetrics = Object.entries(MetricMap)
 
     metrics?.forEach((metric) => {
       const foundMetric = availableMetrics.find((mappedMetric) => {
-        return mappedMetric[0] === metric;
-      });
+        return mappedMetric[0] === metric
+      })
 
-      if (foundMetric) myMetrics.push(foundMetric[1].value);
-    });
+      if (foundMetric) myMetrics.push(foundMetric[1].value)
+    })
 
-    return myMetrics;
-  };
+    return myMetrics
+  }
 
-  const plausibleMetrics = metrics?.length ? getMetrics() : "pageviews";
+  const plausibleMetrics = metrics?.length ? getMetrics() : 'pageviews'
 
-  const baseUrl = String(url.href);
-  url.searchParams.append("period", period());
-  url.searchParams.append("metrics", String(plausibleMetrics));
+  const baseUrl = String(url.href)
+  url.searchParams.append('period', period())
+  url.searchParams.append('metrics', String(plausibleMetrics))
 
   if (property) {
-    const availableProperties = Object.entries(PropertyMap);
+    const availableProperties = Object.entries(PropertyMap)
 
     const foundMetric = availableProperties.find((mappedProperty) => {
-      return mappedProperty[0] === property;
-    });
+      return mappedProperty[0] === property
+    })
 
     if (foundMetric) {
-      url.searchParams.append("property", String(foundMetric[1].value));
+      url.searchParams.append('property', String(foundMetric[1].value))
     }
   }
 
@@ -70,17 +70,17 @@ function client(provider: PlausibleProvider, options: ClientOptions) {
     metricsMap: MetricMap,
     propertiesMap: PropertyMap,
     fetch: async (customUrl?: string) => {
-      const fetchUrl = customUrl ?? url.toString();
+      const fetchUrl = customUrl ?? url.toString()
 
       return await fetch(fetchUrl, {
-        method: "get",
+        method: 'get',
         headers: new Headers({
           Authorization: `Bearer ${provider.apiSecret}`,
-          "Content-Type": "application/x-www-form-urlencoded",
+          'Content-Type': 'application/x-www-form-urlencoded',
         }),
-      });
+      })
     },
-  };
+  }
 }
 
-export default client;
+export default client

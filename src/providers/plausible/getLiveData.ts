@@ -1,25 +1,22 @@
-import type { PlausibleProvider } from "../../types/providers";
-import type { LiveDataOptions } from "..";
-import type { LiveData } from "../../types/data";
-import client from "./client";
+import { PlausibleProvider } from '../../types/providers.js'
+import { LiveDataOptions } from '../index.js'
+import { LiveData } from '../../types/data.js'
+import client from './client.js'
 
-async function getLiveData(
-  provider: PlausibleProvider,
-  options: LiveDataOptions
-) {
+async function getLiveData(provider: PlausibleProvider, options: LiveDataOptions) {
   const plausibleClient = client(provider, {
-    endpoint: "/stats/realtime/visitors",
-  });
+    endpoint: '/stats/realtime/visitors',
+  })
 
   const data = await plausibleClient.fetch().then((response) => {
-    return response.json();
-  });
+    return response.json()
+  })
 
   const processedData: LiveData = {
     visitors: data,
-  };
+  }
 
-  return processedData;
+  return processedData
 }
 
-export default getLiveData;
+export default getLiveData

@@ -1,18 +1,18 @@
-import type { GoogleProvider } from "../../types/providers";
-import type { Metrics, Properties } from "../../types/widgets";
-import { BetaAnalyticsDataClient } from "@google-analytics/data";
-import { MetricMap, PropertyMap } from "./utilities";
+import { GoogleProvider } from '../../types/providers.js'
+import { Metrics, Properties } from '../../types/widgets.js'
+import { BetaAnalyticsDataClient } from '@google-analytics/data'
+import { MetricMap, PropertyMap } from './utilities.js'
 
-type ClientOptions = {};
+type ClientOptions = {}
 
 function client(provider: GoogleProvider, options?: ClientOptions) {
   const analyticsDataClient = new BetaAnalyticsDataClient({
     ...(provider.credentials ? { keyFilename: provider.credentials } : {}),
-  });
+  })
 
   return {
     run: analyticsDataClient,
-  };
+  }
 }
 
-export default client;
+export default client

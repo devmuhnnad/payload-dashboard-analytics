@@ -1,51 +1,58 @@
-import type {
+import {
   PageInfoWidget,
   PageChartWidget,
   PageWidgets,
   NavigationWidgets,
   DashboardWidgets,
-} from "../types/widgets";
-import type { MetricsMap } from "../types/data";
-import type { Field } from "payload/dist/fields/config/types";
-import { getPageViewsChart } from "../components/Charts/PageViewsChart";
-import { getAggregateDataWidget } from "../components/Aggregates/AggregateDataWidget";
-import LiveDataComponent from "../components/Live/LiveDataWidget";
-import GlobalViewsChart from "../components/Charts/GlobalViewsChart";
-import TopPages from "../components/Reports/TopPages";
+} from '../types/widgets.js'
+import { MetricsMap } from '../types/data.js'
+import { CustomComponent, Field } from 'payload'
 
 export const PageWidgetMap: Record<
-  PageWidgets["type"],
+  PageWidgets['type'],
   (config: any, index: number, metricsMap: MetricsMap) => Field
 > = {
   chart: (config: PageChartWidget, index: number, metricsMap: MetricsMap) => ({
-    type: "ui",
-    name: `chart_${index}_${config.timeframe ?? "30d"}`,
+    type: 'ui',
+    name: `chart_${index}_${config.timeframe ?? '30d'}`,
     admin: {
-      position: "sidebar",
+      position: 'sidebar',
       components: {
-        Field: (props: any) => getPageViewsChart(metricsMap, props, config),
+        Field: {
+          path: 'payload-dashboard-analytics/ui',
+          exportName: 'PageViewsChart',
+          clientProps: {
+            options: config,
+            metricsMap,
+          },
+        },
       },
     },
   }),
   info: (config: PageInfoWidget, index: number, metricsMap: MetricsMap) => ({
-    type: "ui",
-    name: `info_${index}_${config.timeframe ?? "30d"}`,
+    type: 'ui',
+    name: `info_${index}_${config.timeframe ?? '30d'}`,
     admin: {
-      position: "sidebar",
+      position: 'sidebar',
       components: {
-        Field: (props: any) =>
-          getAggregateDataWidget(metricsMap, props, config),
+        Field: {
+          path: 'payload-dashboard-analytics/ui',
+          exportName: 'AggregateDataWidget',
+          clientProps: {
+            options: config,
+            metricsMap,
+          },
+        },
       },
     },
   }),
-};
+}
 
-export const NavigationWidgetMap: Record<NavigationWidgets["type"], React.FC> =
-  {
-    live: LiveDataComponent.LiveDataWidget,
-  };
+export const NavigationWidgetMap: Record<NavigationWidgets['type'], CustomComponent> = {
+  live: 'payload-dashboard-analytics/ui#LiveDataWidget',
+}
 
-export const DashboardWidgetMap: Record<DashboardWidgets, React.FC> = {
-  topPages: TopPages,
-  viewsChart: GlobalViewsChart,
-};
+export const DashboardWidgetMap: Record<DashboardWidgets, CustomComponent> = {
+  topPages: 'payload-dashboard-analytics/ui#TopPages',
+  viewsChart: 'payload-dashboard-analytics/ui#GlobalViewsChart',
+}
